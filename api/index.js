@@ -3,11 +3,11 @@ const cors = require('cors');
 
 const app = express();
 
-// Abilita CORS per qualsiasi origine
 app.use(cors());
 app.use(express.json());
 
-app.post('/api/genera', async (req, res) => {
+// Gestore comune per la richiesta POST a Luma
+async function gestisciChiamata(req, res) {
     const LUMA_API_KEY = process.env.LUMA_API_KEY;
 
     if (!LUMA_API_KEY) {
@@ -29,7 +29,15 @@ app.post('/api/genera', async (req, res) => {
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
+}
+
+// Accetta sia la rotta radice che /api
+app.post('/', gestisciChiamata);
+app.post('/api', gestisciChiamata);
+
+// Controllo per le verifiche GET
+app.get('*', (req, res) => {
+    res.json({ status: 'Server attivo e pronto' });
 });
 
-// Esporta l'app per Vercel
 module.exports = app;
