@@ -1,11 +1,16 @@
-export default async function handler(req, res) {
-    // Abilita le chiamate cross-origin (CORS) da StackBlitz
+module.exports = async (req, res) => {
+    // Gestione CORS per consentire le chiamate da StackBlitz
+    res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
+    );
 
     if (req.method === 'OPTIONS') {
-        return res.status(200).end();
+        res.status(200).end();
+        return;
     }
 
     if (req.method !== 'POST') {
@@ -15,11 +20,10 @@ export default async function handler(req, res) {
     const LUMA_API_KEY = process.env.LUMA_API_KEY;
 
     if (!LUMA_API_KEY) {
-        return res.status(500).json({ error: 'Chiave API non configurata sul server' });
+        return res.status(500).json({ error: 'Chiave API non configurata su Vercel' });
     }
 
     try {
-        // Chiamata sicura ai server di Luma
         const lumaRes = await fetch('https://api.lumalabs.ai/api/v1/capture', {
             method: 'POST',
             headers: {
@@ -34,4 +38,4 @@ export default async function handler(req, res) {
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
-}
+};
