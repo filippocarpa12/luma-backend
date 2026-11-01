@@ -6,7 +6,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Gestore comune per la richiesta POST a Luma
 async function gestisciChiamata(req, res) {
     const LUMA_API_KEY = process.env.LUMA_API_KEY;
 
@@ -15,13 +14,16 @@ async function gestisciChiamata(req, res) {
     }
 
     try {
-        const lumaRes = await fetch('https://api.lumalabs.ai/api/v1/capture', {
+        // Endpoint aggiornato per i capture video di Luma
+        const lumaRes = await fetch('https://api.lumalabs.ai/api/v1.2/captures', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${LUMA_API_KEY}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(req.body)
+            body: JSON.stringify({
+                title: req.body.title || "Scansione Stanza"
+            })
         });
 
         const data = await lumaRes.json();
@@ -31,11 +33,9 @@ async function gestisciChiamata(req, res) {
     }
 }
 
-// Accetta sia la rotta radice che /api
 app.post('/', gestisciChiamata);
 app.post('/api', gestisciChiamata);
 
-// Controllo per le verifiche GET
 app.get('*', (req, res) => {
     res.json({ status: 'Server attivo e pronto' });
 });
