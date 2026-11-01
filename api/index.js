@@ -1,69 +1,45 @@
 const express = require('express');
 const cors = require('cors');
+const { LumaAI } = require('@lumai/sdk');
 
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json());
 
-async function gestisciChiamata(req, res) {
-    const rawKey = (process.env.LUMA_API_KEY || '').trim();
-
-    if (!rawKey) {
-        return res.status(500).json({ error: "LUMA_API_KEY mancante nelle variabili Vercel." });
+app.all('*', async (req, res) => {
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
     }
 
-    // Normalizza la chiave rimuovendo eventuali "Bearer " duplicati
-    const token = rawKey.replace(/^Bearer\s+/i, '');
+    if (req.method !== 'POST') {
+        return res.status(200).json({ status: "Backend Luma attivo" });
+    }
 
-    // Headers standard per Luma
-    const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-    };
+    const apiKey = (process.env.LUMA_API_KEY || '').trim();
+    if (!apiKey) {
+        return res.status(500).json({ error: "LUMA_API_KEY non configurata su Vercel" });
+    }
 
     try {
-        // Tentativo A: Endpoint ufficiale Dream Machine Generations
-        let lumaRes = await fetch('https://api.lumalabs.ai/dream-machine/v1/generations', {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                prompt: "Photorealistic 3D interior architecture room floor plan"
-            })
+        // Inizializza il client ufficiale Luma con la tua chiave da platform.lumalabs.ai
+        const client = new LumaAI({ authToken: apiKey });
+
+        // Avvia la generazione sulla piattaforma Luma
+        const generation = await client.generations.create({
+            prompt: "Photorealistic 3D interior architecture room 360 degree orbit view",
+            aspect_ratio: "16:9"
         });
 
-        // Tentativo B: Se risponde 401 o 403, fallback automatico sull'endpoint Genie 3D
-        if (lumaRes.status === 401 || lumaRes.status === 403) {
-            console.log("Tentativo primario rifiutato, provo endpoint Genie 3D...");
-            lumaRes = await fetch('https://genie.lumalabs.ai/api/v1/generations', {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({
-                    prompt: "Photorealistic 3D interior architecture room floor plan"
-                })
-            });
-        }
-
-        const testo = await lumaRes.text();
-        let payload;
-        try {
-            payload = JSON.parse(testo);
-        } catch (_) {
-            payload = { raw: testo };
-        }
-
-        return res.status(lumaRes.status).json(payload);
+        console.log("Generazione avviata con successo su Luma:", generation.id);
+        return res.status(200).json(generation);
     } catch (err) {
-        return res.status(500).json({ error: err.message });
+        console.error("Errore SDK Luma:", err);
+        return res.status(err.status || 500).json({
+            error: err.message,
+            dettagli: err.body || null
+        });
     }
-}
-
-app.post('/', gestisciChiamata);
-app.post('/api', gestisciChiamata);
-
-app.get('*', (req, res) => {
-    res.json({ status: "Backend Luma attivo" });
 });
 
 module.exports = app;
