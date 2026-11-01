@@ -14,19 +14,30 @@ async function gestisciChiamata(req, res) {
     }
 
     try {
-        // Endpoint aggiornato per i capture video di Luma
-        const lumaRes = await fetch('https://api.lumalabs.ai/api/v1.2/captures', {
+        // Endpoint ufficiale attivo di Luma AI
+        const lumaRes = await fetch('https://api.lumalabs.ai/dream-machine/v1/generations', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${LUMA_API_KEY}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'accept': 'application/json'
             },
             body: JSON.stringify({
-                title: req.body.title || "Scansione Stanza"
+                prompt: "A realistic 3D interior room architecture model, floor plan style",
+                aspect_ratio: "16:9"
             })
         });
 
-        const data = await lumaRes.json();
+        const testoRisposta = await lumaRes.text();
+        console.log("Risposta grezza Luma:", testoRisposta);
+
+        let data;
+        try {
+            data = JSON.parse(testoRisposta);
+        } catch (e) {
+            data = { raw: testoRisposta };
+        }
+
         return res.status(lumaRes.status).json(data);
     } catch (err) {
         return res.status(500).json({ error: err.message });
