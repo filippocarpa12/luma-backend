@@ -1,14 +1,24 @@
 module.exports = async (req, res) => {
+    // 1. Intestazioni CORS obbligatorie
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
+    );
+
+    // 2. Gestione immediata del preflight (OPTIONS)
     if (req.method === 'OPTIONS') {
-        return res.status(200).end();
+        return res.status(200).send('OK');
     }
 
+    // 3. Controllo metodo POST
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Metodo non consentito' });
     }
 
     const LUMA_API_KEY = process.env.LUMA_API_KEY;
-
     if (!LUMA_API_KEY) {
         return res.status(500).json({ error: 'Chiave API non configurata su Vercel' });
     }
